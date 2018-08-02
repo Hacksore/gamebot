@@ -11,7 +11,9 @@ import { util } from "./util";
 
 require("dotenv").config();
 
-mongoose.connect("mongodb://localhost/authbot");
+mongoose.connect("mongodb://localhost:27017/authbot", {
+	useNewUrlParser: true
+});
 
 const app = express();
 app.use(session({
@@ -42,6 +44,7 @@ passport.use(new steam.Strategy({
 	console.log(profile)
 	if (response == null) {
 		console.log("User was added to DB");
+
 		User.create({
 			steamID: profile.id,
 			displayName: profile.displayName,
@@ -94,7 +97,7 @@ app.get("/", async (req, res) => {
 });
 
 app.listen(8080, () => {
-	console.log("Server running")
+
 });
 
 const chatBot = new ChatBot();
