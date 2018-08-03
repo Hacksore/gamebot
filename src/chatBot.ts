@@ -1,102 +1,71 @@
 import * as Discord from "discord.js";
 import { Game } from "./models/gameModel"
+
+import { GameLookup } from "./core/gameLookup";
+
+import { CommandHandler } from "./core/commandHandler";
+import { HelpCommand } from "./commands/help";
+import { GamesCommand } from "./commands/games";
 class ChatBot {
 
 	public client: Discord.Client;
+	public commandHandler: CommandHandler;
 
 	constructor() {
 		this.client = new Discord.Client();
 
 		this.client.login(process.env.DISCORD_BOT_TOKEN);
-
 		this.client.on("ready", this.ready.bind(this));
-		this.client.on("message", this.onMessage.bind(this));
-		this.client.on("guildUpdate", this.onGuildUpdate.bind(this))
+
+		// register command handler
+		this.commandHandler = new CommandHandler(this.client);
+
+		this.commandHandler.register(new GamesCommand());
+		this.commandHandler.register(new HelpCommand());
+
+		setInterval(() => {
+			// update games every 5 minutes 
+			console.log("Updating games!")
+			this.fetchGames();
+		}, 1000 * 300);
 	}
 
-	onGuildUpdate() {
-		console.log(this.client.guilds)
+
+	ready() {
+		this.fetchGames();
 	}
 
-	async ready() {
-		console.log("ChatBot is ready")
-
-
+	fetchGames() {
 		this.client.guilds.forEach(async guild => {
 			const users = await guild.fetchMembers();
-			users.presences.forEach((pres, id) => {
-				if (pres.status === "online") {
-					console.log(pres)
+			users.presences.forEach(async (pres, id) => {
+				if (pres.status === "online" && pres.game !== null) {
+					const gameName = pres.game.name;
+					const game = await GameLookup.searchGame(gameName);
+
+					const userGame = await Game.findOne({ userID: id });
+
+					if (userGame === null) {
+						Game.create({
+							userID: id,
+							game: gameName,
+							gameID: game.id
+						});
+					} else {
+
+						await Game.update({ userID: id }, {
+							game: gameName,
+							gameID: game.id
+						});
+					}
+				}
+
+				if (pres.status === "online" && pres.game === null) {
+					await Game.remove({ userID: id });
 				}
 			});
-
 		})
 	}
-
-	async onMessage(msg: Discord.Message) {
-		if (msg.content === '!verify') {
-			msg.author.sendMessage("Please click this link to register: http://localhost:8080/auth/steam");
-		}
-
-		if (msg.content === '!games') {
-			const embed = new Discord.RichEmbed({
-				color: 3447003,
-				title: "League of Legends",
-				description: "200/5000 players"
-
-			});
-
-			for (let i = 0; i < 3; i++) {
-				msg.channel.sendEmbed(embed);
-			}
-		}
-
-		if (msg.content === '!test') {
-			const game = msg.author.presence.game;
-			console.log(game);
-			msg.author.send("Playing: " + game);
-		}
-
-		if (msg.content === '!users') {
-			if (msg.guild === null) {
-				return console.log("dm");
-			}
-
-			const users = await msg.guild.fetchMembers();
-			const games = {};
-
-			users.presences.forEach(async (pres, id) => {
-				const userData = msg.author.client.users.get(id);
-				const game = pres.game;
-				if (game !== null && !userData.bot) {
-					if (games[game.name] === undefined) {
-						games[game.name] = [];
-					}
-
-					games[game.name].push({
-						clientData: {
-							name: userData.username,
-							avatar: userData.avatarURL
-						},
-						gameData: {
-							name: game.name,
-							streaming: game.streaming
-						}
-					});
-				}
-
-			});
-
-			Game.create({
-				guild: msg.guild.id,
-				games: games
-			});
-
-			msg.channel.sendCode("javascript", JSON.stringify(games, null, 2));
-		}
-
-	}
-
 
 }
 
