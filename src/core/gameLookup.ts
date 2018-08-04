@@ -1,7 +1,10 @@
 import igdb from "igdb-api-node";
 import { GameCache } from "../models/gameCacheModel";
-const gameDB = igdb("e56c9b004b1c7a655655541fc0d990c9");
+import { logger } from "./logger"
 
+require("dotenv").config();
+
+const gameDB = igdb(process.env.IGDB_API_KEY);
 class GameLookup {
 
 	static async findGame(gameName: String) {
@@ -12,6 +15,7 @@ class GameLookup {
 
 		const game = await this.findGame(gameName);
 		if (game !== null) {
+			logger.debug(`[GAMECACHE] Found "${gameName}", fetching from DB`);
 			return game;
 		}
 
@@ -23,6 +27,7 @@ class GameLookup {
 		const result = response.body[0];
 
 		// add game to mongo for later lookups
+		logger.debug(`[GAMECACHE] Could not find "${gameName}", creating`);
 		GameCache.create({
 			name: gameName,
 			id: result.id,

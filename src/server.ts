@@ -2,7 +2,7 @@ import { ChatBot } from "./chatBot";
 import * as express from "express";
 import * as mongoose from "mongoose";
 
-import { util } from "./util";
+import { util } from "./core/util";
 
 require("dotenv").config();
 
