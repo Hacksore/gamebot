@@ -1,5 +1,6 @@
 import { BaseCommand } from "../core/baseCommand"
 import * as Discord from "discord.js";
+import { logger } from "./logger";
 
 class CommandHandler {
 
@@ -23,8 +24,10 @@ class CommandHandler {
 		const command = rawArgs[0].substr(1);
 		const args = rawArgs.splice(1);
 
+
 		const commandRef: BaseCommand = this.commands.get(command);
 		if (commandRef !== null) {
+
 			try {
 				commandRef.onCommand(message, args);
 			} catch (e) {

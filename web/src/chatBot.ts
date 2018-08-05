@@ -25,48 +25,69 @@ class ChatBot {
 		// register command handler
 		this.commandHandler = new CommandHandler(this.client);
 
-		this.commandHandler.register(new GamesCommand());
-		this.commandHandler.register(new HelpCommand());
+		this.commandHandler.register(new GamesCommand(this.client));
+		this.commandHandler.register(new HelpCommand(this.client));
 
 	}
 
-	ready() {
+	async ready() {
+		logger.info("ChatBot ready")
+
+		// let game = await GameLookup.searchGame("League of Legends");
+		// console.log(game);
+
 		this.fetchGames();
+
+		//const myUser = await this.client.fetchUser("378293909610037252");
+
+		logger.on("data", (data: any) => {
+			//myUser.send(data.message);
+			//console.log(data.message);
+		});
+
 	}
 
 	async onPresenceUpdate(oldRef: Discord.GuildMember, newRef: Discord.GuildMember) {
 		const userID = newRef.id;
-
-		this.setGameState(userID, newRef.presence);
+		this.setGameState(userID, newRef.presence, oldRef.presence);
 	}
 
 	async fetchGames() {
 		this.client.guilds.forEach(async guild => {
 			const users = await guild.fetchMembers();
 			users.presences.forEach(async (presence, id) => {
-				this.setGameState(id, presence);
+				this.setGameState(id, presence, null);
 			});
 		});
 	}
 
-	async setGameState(userID: string, presence: Discord.Presence) {
+	async setGameState(userID: string, newPresence: Discord.Presence, oldPresence: Discord.Presence) {
 
 		const userObject = await this.client.fetchUser(userID);
 		const userGame = await Game.findOne({ userID: userID });
 
 		// have database entry but we found them not in a game
-		if (presence.game === null && userGame !== null) {
+		if (newPresence.game === null && userGame !== null) {
 			logger.debug(`[setGameState] Removing ${userObject.username}'s game to null`)
 			return await Game.remove({ userID: userID });
 		}
 
 		// if the previous does not return 
-		if (presence.game === null) {
+		if (newPresence.game === null) {
 			return;
 		}
 
+
+		if (newPresence.game.name && oldPresence !== null && oldPresence.game) {
+			// we have an old game lets make sure we dont update the same one with shit like Runescape actions				
+			if (newPresence.game.name === oldPresence.game.name) {
+				return;
+			}
+		}
+
 		// use the service to grab the game info
-		const gameResult = await GameLookup.searchGame(presence.game.name);
+		const gameResult = await GameLookup.searchGame(newPresence.game.name);
+		//console.log("RES: " + gameResult.name);
 
 		// we don't want to update if the game db finds nothing 
 		if (gameResult === null) {
@@ -76,23 +97,29 @@ class ChatBot {
 		// users is playing a game and we got an API response
 		// create users game record in the databse
 		if (userGame === null && gameResult !== null) {
-			logger.debug(`[setGameState] Creating ${userObject.username}'s game "${presence.game.name}"`)
-			await Game.create({
-				userID: userID,
-				game: presence.game.name,
-				gameID: gameResult.id
-			});
+			try {
+				logger.debug(`[setGameState] Creating ${userObject.username}'s game "${newPresence.game.name}"`)
+				await Game.create({
+					userID: userID,
+					game: newPresence.game.name,
+					gameID: gameResult.id
+				});
+			} catch { }
 		}
 
 		// users changes states playing a game and we got an API response
 		// create users game record in the databse
 		if (userGame !== null && gameResult !== null) {
-			logger.debug(`[setGameState] Updating ${userObject.username}'s game to "${presence.game.name}"`)
-			await Game.update({ userID: userID }, {
-				userID: userID,
-				game: presence.game.name,
-				gameID: gameResult.id
-			});
+
+			try {
+				logger.debug(`[setGameState] Updating ${userObject.username}'s game to "${newPresence.game.name}"`)
+				await Game.update({ userID: userID }, {
+					userID: userID,
+					game: newPresence.game.name,
+					gameID: gameResult.id
+				});
+			} catch { }
+
 		}
 
 	}
