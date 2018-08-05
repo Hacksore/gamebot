@@ -8,7 +8,7 @@ const myFormat = printf(info => {
 });
 
 const logger = winston.createLogger({
-	level: "debug",
+	level: "info",
 	format: combine(
 		format.colorize(),
 		timestamp({ format: "hh:mm:ss" }),
@@ -16,9 +16,9 @@ const logger = winston.createLogger({
 	),
 	transports: [
 		new winston.transports.Console(),
-	],
-
+	]
 });
+
 
 
 export { logger };
