@@ -9,8 +9,7 @@ const GameCacheSchema = new Schema({
 	name: {
 		type: String,
 		unique: true,
-	},
-	cover: Object
+	}
 });
 
 const GameCache = mongoose.model("GameCache", GameCacheSchema);

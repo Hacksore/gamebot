@@ -19,7 +19,7 @@ class GamesCommand extends BaseCommand {
 	async onCommand(message: Discord.Message, args: String[]) {
 
 		if (message.guild === null) {
-			return;
+			// return;
 		}
 
 		const games = await GameCache.find({});
@@ -55,6 +55,8 @@ class GamesCommand extends BaseCommand {
 		embed.title = "TOP GAMES";
 
 		for (let gameObject of sortedGames) {
+
+			// only show ones with more than 1 player
 			if (gameObject.count <= 1) {
 				continue;
 			}
@@ -65,7 +67,7 @@ class GamesCommand extends BaseCommand {
 			};
 
 			//embed.fields.push(record);
-			users.push(`**[${gameObject.name}](http://${this.server}/game/${gameObject.id})**`);
+			users.push(`[**${gameObject.count} players**] **[${gameObject.name}](http://${this.server}/game/${gameObject.id})**`);
 		}
 		embed.setDescription(users.join("\n"));
 

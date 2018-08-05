@@ -7,6 +7,7 @@ const GameSchema = new Schema({
 		unique: true
 	},
 	gameID: Number,
+	guildID: String,
 	game: Object
 });
 

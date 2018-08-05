@@ -8,6 +8,7 @@ import { HelpCommand } from "./commands/help";
 import { GamesCommand } from "./commands/games";
 
 import { logger } from "./core/logger"
+import { util } from "./core/util";
 
 class ChatBot {
 
@@ -33,17 +34,10 @@ class ChatBot {
 	async ready() {
 		logger.info("ChatBot ready")
 
-		// let game = await GameLookup.searchGame("League of Legends");
-		// console.log(game);
+		//let game = await util.getGameInfo("League of Legends");
+		//console.log(game);
 
 		this.fetchGames();
-
-		//const myUser = await this.client.fetchUser("378293909610037252");
-
-		logger.on("data", (data: any) => {
-			//myUser.send(data.message);
-			//console.log(data.message);
-		});
 
 	}
 
@@ -102,7 +96,8 @@ class ChatBot {
 				await Game.create({
 					userID: userID,
 					game: newPresence.game.name,
-					gameID: gameResult.id
+					gameID: gameResult.id,
+					//guildID: userObject.
 				});
 			} catch { }
 		}

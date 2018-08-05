@@ -1,6 +1,7 @@
 import igdb from "igdb-api-node";
 import { GameCache } from "../models/gameCacheModel";
 import { logger } from "./logger"
+import { util } from "./util";
 
 require("dotenv").config();
 
@@ -19,9 +20,10 @@ class GameLookup {
 			return game;
 		}
 
-		let response;
+
 		let result;
 		try {
+			/*
 			response = await gameDB.games({
 				fields: "*",
 				platform: "PC",
@@ -29,8 +31,15 @@ class GameLookup {
 			}, ["name", "cover"]);
 
 			result = response.body[0];
-		} catch {
+			*/
+			const response = await util.getGameInfo(gameName);
 
+			if (response.results[0] !== undefined) {
+				result = response.results[0];
+			}
+
+		} catch (e) {
+			result = null;
 		}
 
 		// don't add the game
@@ -44,8 +53,7 @@ class GameLookup {
 			logger.info(`[GAMECACHE] Could not find "${gameName}", creating`);
 			await GameCache.create({
 				name: gameName,
-				id: result.id,
-				cover: result.cover
+				id: result.id
 			});
 		} catch {
 
